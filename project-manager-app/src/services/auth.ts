@@ -1,4 +1,4 @@
-import usersData from '@/data/users.json';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export interface User {
   id: string;
@@ -6,10 +6,6 @@ export interface User {
   email: string;
   avatarUrl: string;
   role: string;
-}
-
-export interface AuthUser extends User {
-  password: string;
 }
 
 export interface LoginCredentials {
@@ -22,14 +18,10 @@ export interface SignupData extends LoginCredentials {
 }
 
 class AuthService {
-  private users: AuthUser[] = usersData.users;
   private currentUser: User | null = null;
-
-  // Simulate localStorage for persistence
   private storageKey = 'projexia_current_user';
 
   constructor() {
-    // Load user from localStorage on initialization
     const storedUser = localStorage.getItem(this.storageKey);
     if (storedUser) {
       this.currentUser = JSON.parse(storedUser);
@@ -37,57 +29,39 @@ class AuthService {
   }
 
   async login(credentials: LoginCredentials): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const user = this.users.find(
-      u => u.email === credentials.email && u.password === credentials.password
-    );
-
-    if (!user) {
-      throw new Error('Invalid email or password');
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Login failed');
     }
-
-    // Remove password from user object before storing
-    const { password, ...userWithoutPassword } = user;
-    this.currentUser = userWithoutPassword;
-
-    // Store in localStorage
-    localStorage.setItem(this.storageKey, JSON.stringify(userWithoutPassword));
-
-    return userWithoutPassword;
+    const user = await response.json();
+    this.currentUser = user;
+    localStorage.setItem(this.storageKey, JSON.stringify(user));
+    return user;
   }
 
   async signup(data: SignupData): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Check if user already exists
-    if (this.users.some(u => u.email === data.email)) {
-      throw new Error('User with this email already exists');
+    const response = await fetch(`${API_URL}/auth/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Signup failed');
     }
-
-    // Create new user
-    const newUser: AuthUser = {
-      id: String(this.users.length + 1),
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
-      role: 'user'
-    };
-
-    // Add to users array
-    this.users.push(newUser);
-
-    // Remove password from user object before storing
-    const { password, ...userWithoutPassword } = newUser;
-    this.currentUser = userWithoutPassword;
-
-    // Store in localStorage
-    localStorage.setItem(this.storageKey, JSON.stringify(userWithoutPassword));
-
-    return userWithoutPassword;
+    const user = await response.json();
+    this.currentUser = user;
+    localStorage.setItem(this.storageKey, JSON.stringify(user));
+    return user;
   }
 
   logout(): void {
@@ -104,5 +78,4 @@ class AuthService {
   }
 }
 
-// Create a singleton instance
 export const authService = new AuthService(); 

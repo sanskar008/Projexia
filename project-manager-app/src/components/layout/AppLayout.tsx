@@ -30,6 +30,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [showNewProjectDialog, setShowNewProjectDialog] = React.useState(false);
   const [newProjectName, setNewProjectName] = React.useState("");
   const [newProjectDescription, setNewProjectDescription] = React.useState("");
+  const [showAdminDeleteDialog, setShowAdminDeleteDialog] = React.useState(false);
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -103,13 +104,29 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     try {
       await deleteProject(projectId);
       toast({ title: 'Project deleted', description: 'The project was deleted successfully.' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete project.', variant: 'destructive' });
+    } catch (error: any) {
+      if (typeof error.message === 'string' && error.message.includes('Only the admin can delete this project')) {
+        setShowAdminDeleteDialog(true);
+      } else {
+        toast({ title: 'Error', description: 'Failed to delete project.', variant: 'destructive' });
+      }
     }
   };
 
   return (
     <div className="flex min-h-screen bg-background">
+      {/* Admin Delete Dialog */}
+      <Dialog open={showAdminDeleteDialog} onOpenChange={setShowAdminDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Permission Denied</DialogTitle>
+          </DialogHeader>
+          <div>Only the admin can delete this project.</div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowAdminDeleteDialog(false)} autoFocus>OK</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Sidebar */}
       <div
         className={cn(

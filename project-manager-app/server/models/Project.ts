@@ -8,6 +8,7 @@ export interface ProjectDocument extends Document {
   description: string;
   tasks: TaskDocument['_id'][];
   members: ProjectMemberDocument['_id'][];
+  creatorId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const ProjectSchema: Schema = new Schema({
   description: { type: String, required: true },
   tasks: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
   members: [{ type: Schema.Types.ObjectId, ref: 'ProjectMember' }],
+  creatorId: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

@@ -31,16 +31,14 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
   const { currentProject, updateProject } = useProject();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("member");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !name.trim()) {
+    if (!email.trim()) {
       toast({
-        title: "Missing fields",
-        description: "Please provide both name and email address",
+        title: "Missing email",
+        description: "Please provide the member's email address",
         variant: "destructive",
       });
       return;
@@ -50,8 +48,6 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
       setIsSubmitting(true);
       const newMember = await api.inviteProjectMember(projectId, {
         email: email.trim(),
-        name: name.trim(),
-        role,
       });
 
       // Update the project with the new member
@@ -62,8 +58,6 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
       }
 
       setEmail("");
-      setName("");
-      setRole("member");
       setOpen(false);
 
       toast({
@@ -100,18 +94,6 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
         <form onSubmit={handleInvite}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter member's name"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -122,23 +104,6 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
                 required
                 disabled={isSubmitting}
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={setRole}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>

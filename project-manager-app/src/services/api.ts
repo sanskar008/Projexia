@@ -12,10 +12,15 @@ const handleResponse = async (response: Response) => {
 };
 
 // Project API
-export const fetchProjects = async (): Promise<Project[]> => {
+export const fetchProjects = async (userId?: string, email?: string): Promise<Project[]> => {
   try {
-    console.log('Fetching projects from:', `${API_URL}/projects`);
-    const response = await fetch(`${API_URL}/projects`, {
+    let url = `${API_URL}/projects`;
+    const params = [];
+    if (userId) params.push(`userId=${encodeURIComponent(userId)}`);
+    if (email) params.push(`email=${encodeURIComponent(email)}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    console.log('Fetching projects from:', url);
+    const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -45,14 +50,14 @@ export const fetchProjectById = async (id: string): Promise<Project> => {
   }
 };
 
-export const createProject = async (project: Omit<Project, "id" | "createdAt" | "updatedAt">): Promise<any> => {
+export const createProject = async (project: Omit<Project, "id" | "createdAt" | "updatedAt">, creatorId: string): Promise<any> => {
   try {
-    const response = await fetch(`${API_URL}/projects`, {
+    const response = await fetch(`${API_URL}/projects?userId=${creatorId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(project),
+      body: JSON.stringify({ ...project, creatorId }),
     });
     const p = await handleResponse(response);
     return { ...p, id: p._id };
@@ -78,13 +83,14 @@ export const updateProject = async (id: string, updates: Partial<Project>): Prom
   }
 };
 
-export const deleteProject = async (id: string): Promise<void> => {
+export const deleteProject = async (id: string, userId: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/projects/${id}`, {
+    const response = await fetch(`${API_URL}/projects/${id}?userId=${encodeURIComponent(userId)}`, {
       method: "DELETE",
     });
     if (!response.ok) {
-      throw new Error("Failed to delete project");
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to delete project");
     }
   } catch (error) {
     console.error(`Error deleting project ${id}:`, error);
@@ -175,7 +181,7 @@ export const addComment = async (taskId: string, comment: { content: string; use
 // Project Member API
 export const inviteProjectMember = async (
   projectId: string,
-  member: { email: string; name: string; role: string }
+  member: { email: string }
 ): Promise<ProjectMember> => {
   try {
     const response = await fetch(`${API_URL}/projects/${projectId}/invite`, {

@@ -9,7 +9,24 @@ const router = express.Router();
 // Get all projects
 router.get('/', async (req, res) => {
   try {
-    const projects = await Project.find()
+    const userId = req.query.userId;
+    const email = req.query.email;
+    let filter = {};
+    if (userId || email) {
+      let memberIds: any[] = [];
+      if (email) {
+        // Find all ProjectMember docs with this email
+        const members = await ProjectMember.find({ email });
+        memberIds = members.map(m => m._id);
+      }
+      filter = {
+        $or: [
+          userId ? { creatorId: userId } : null,
+          memberIds.length > 0 ? { members: { $in: memberIds } } : null
+        ].filter(Boolean)
+      };
+    }
+    const projects = await Project.find(filter)
       .populate({
         path: 'tasks',
         populate: {
@@ -49,12 +66,17 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, description, members } = req.body;
+    const creatorId = req.query.userId || req.body.creatorId;
+    if (!creatorId) {
+      return res.status(400).json({ message: 'creatorId is required' });
+    }
     
     const newProject = new Project({
       name,
       description,
       tasks: [],
-      members: []
+      members: [],
+      creatorId
     });
     
     const savedProject = await newProject.save();
@@ -102,21 +124,20 @@ router.put('/:id', async (req, res) => {
 // Delete a project
 router.delete('/:id', async (req, res) => {
   try {
+    const userId = req.query.userId;
     const project = await Project.findById(req.params.id);
-    
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    
+    if (!userId || project.creatorId !== userId) {
+      return res.status(403).json({ message: 'Only the admin can delete this project.' });
+    }
     // Delete all tasks associated with the project
     await Task.deleteMany({ projectId: project._id });
-    
     // Delete all members associated with the project
     await ProjectMember.deleteMany({ projectId: project._id });
-    
     // Delete the project
     await Project.findByIdAndDelete(req.params.id);
-    
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
@@ -126,11 +147,11 @@ router.delete('/:id', async (req, res) => {
 // Invite a member to a project
 router.post('/:id/invite', async (req, res) => {
   try {
-    const { email, role = 'member', name } = req.body;
+    const { email } = req.body;
     const projectId = req.params.id;
 
-    if (!email || !name) {
-      return res.status(400).json({ message: 'Email and name are required' });
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
     }
 
     const project = await Project.findById(projectId);
@@ -144,14 +165,23 @@ router.post('/:id/invite', async (req, res) => {
       return res.status(400).json({ message: 'Member already invited to this project' });
     }
 
-    // Generate avatar URL (optional, can be improved)
-    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+    // Try to find a real user for this email
+    let name = email;
+    let avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+    try {
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findOne({ email });
+      if (user) {
+        name = user.name;
+        avatarUrl = user.avatarUrl || avatarUrl;
+      }
+    } catch (e) { /* ignore */ }
 
     // Create new member
     const newMember = new ProjectMember({
       name,
       email,
-      role,
+      role: 'member',
       avatarUrl,
       projectId
     });

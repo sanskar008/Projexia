@@ -132,7 +132,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const loadProjects = async () => {
     try {
       setError(null);
-      const data = await api.fetchProjects();
+      const data = await api.fetchProjects(currentUser?.id, currentUser?.email);
       setProjects(data);
       
       // If no current project is selected, select the first one
@@ -202,7 +202,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const createProject = async (project: Omit<Project, "id" | "createdAt" | "updatedAt">) => {
     try {
       setError(null);
-      const newProject = await api.createProject(project);
+      if (!currentUser) throw new Error("No user logged in");
+      const newProject = await api.createProject(project, currentUser.id);
       setProjects(prev => [...prev, newProject]);
       setCurrentProject(newProject);
       return newProject;
@@ -232,8 +233,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const deleteProject = async (id: string) => {
     try {
       setError(null);
-      await api.deleteProject(id);
-      
+      if (!currentUser) throw new Error("No user logged in");
+      await api.deleteProject(id, currentUser.id);
       setProjects(prev => prev.filter(p => p.id !== id));
       if (currentProject?.id === id) {
         // Set the first available project as current, or null if none exist
