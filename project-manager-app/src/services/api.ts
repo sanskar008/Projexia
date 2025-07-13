@@ -1,4 +1,3 @@
-
 import { Project, Task, Comment, ProjectMember } from "@/contexts/ProjectContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -86,6 +85,21 @@ export const deleteProject = async (id: string): Promise<void> => {
 };
 
 // Task API
+export const fetchTasksByProject = async (projectId: string): Promise<Task[]> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/project/${projectId}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+    });
+    return await handleResponse(response);
+  } catch (error) {
+    console.error(`Error fetching tasks for project ${projectId}:`, error);
+    throw error;
+  }
+};
+
 export const createTask = async (task: Omit<Task, "id" | "createdAt" | "updatedAt" | "comments">): Promise<any> => {
   try {
     const response = await fetch(`${API_URL}/tasks`, {
@@ -144,6 +158,63 @@ export const addComment = async (taskId: string, comment: { content: string; use
     return await handleResponse(response);
   } catch (error) {
     console.error(`Error adding comment to task ${taskId}:`, error);
+    throw error;
+  }
+};
+
+// Project Member API
+export const inviteProjectMember = async (
+  projectId: string,
+  member: { email: string; role: string }
+): Promise<ProjectMember> => {
+  try {
+    const response = await fetch(`${API_URL}/projects/${projectId}/members`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(member),
+    });
+    return await handleResponse(response);
+  } catch (error) {
+    console.error(`Error inviting member to project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+export const removeProjectMember = async (
+  projectId: string,
+  memberId: string
+): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/projects/${projectId}/members/${memberId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to remove project member");
+    }
+  } catch (error) {
+    console.error(`Error removing member ${memberId} from project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+export const updateProjectMemberRole = async (
+  projectId: string,
+  memberId: string,
+  role: string
+): Promise<ProjectMember> => {
+  try {
+    const response = await fetch(`${API_URL}/projects/${projectId}/members/${memberId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role }),
+    });
+    return await handleResponse(response);
+  } catch (error) {
+    console.error(`Error updating member role for ${memberId} in project ${projectId}:`, error);
     throw error;
   }
 };

@@ -1,5 +1,5 @@
 
-import express from 'express';
+import * as express from 'express';
 import Project from '../models/Project';
 import Task from '../models/Task';
 import ProjectMember from '../models/ProjectMember';
@@ -118,6 +118,51 @@ router.delete('/:id', async (req, res) => {
     await Project.findByIdAndDelete(req.params.id);
     
     res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Invite a member to a project
+router.post('/:id/invite', async (req, res) => {
+  try {
+    const { email, role = 'member', name } = req.body;
+    const projectId = req.params.id;
+
+    if (!email || !name) {
+      return res.status(400).json({ message: 'Email and name are required' });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Check if member already exists in the project
+    const existingMember = await ProjectMember.findOne({ email, projectId });
+    if (existingMember) {
+      return res.status(400).json({ message: 'Member already invited to this project' });
+    }
+
+    // Generate avatar URL (optional, can be improved)
+    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+
+    // Create new member
+    const newMember = new ProjectMember({
+      id: String(Date.now()),
+      name,
+      email,
+      role,
+      avatarUrl,
+      projectId
+    });
+    await newMember.save();
+
+    // Add member to project
+    project.members.push(newMember._id);
+    await project.save();
+
+    res.status(201).json(newMember);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

@@ -1,5 +1,5 @@
 
-import express from 'express';
+import * as express from 'express';
 import Task from '../models/Task';
 import Project from '../models/Project';
 import Comment from '../models/Comment';

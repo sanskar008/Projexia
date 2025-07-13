@@ -7,9 +7,16 @@ import { TaskStatus, Task } from "@/contexts/ProjectContext";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 const Dashboard = () => {
-  const { projects, currentUser, setCurrentProject } = useProject();
+  const { projects, currentUser, setCurrentProject, createProject } = useProject();
+  const [newProjectName, setNewProjectName] = useState("");
+  const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get all tasks from all projects
   const allTasks = projects.flatMap((project) => project.tasks);
@@ -93,6 +100,23 @@ const Dashboard = () => {
     </div>
   );
 
+  const handleNewProjectSubmit = async () => {
+    if (!newProjectName.trim()) {
+      toast({ title: "Error", description: "Project name is required." });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const newProject = await createProject({ name: newProjectName, description: "", members: [], tasks: [] });
+      toast({ title: "Project Created", description: `Project '${newProject.name}' was created successfully.` });
+      setNewProjectName("");
+      setIsNewProjectDialogOpen(false);
+    } catch (err) {
+      console.error("Error (MongoDB Atlas) creating new project:", err);
+      toast({ title: "Error", description: "Failed to create new project (MongoDB Atlas)." });
+    } finally { setIsSubmitting (false); }
+  };
+
   return (
     <div className="p-6 h-full overflow-auto">
       <div className="flex justify-between items-center mb-6">
@@ -128,17 +152,26 @@ const Dashboard = () => {
             </SelectContent>
           </Select>
 
-          <Button 
-            onClick={() => {
-              toast({
-                title: "Coming soon",
-                description: "Project creation will be available soon."
-              });
-            }}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
+          <Dialog open={isNewProjectDialogOpen} onOpenChange={setIsNewProjectDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>New Project</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Project</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <Label htmlFor="newProjectName">Project Name</Label>
+                <Input id="newProjectName" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button disabled={isSubmitting} onClick={handleNewProjectSubmit}>Create</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

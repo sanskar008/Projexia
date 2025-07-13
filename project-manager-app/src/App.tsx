@@ -1,45 +1,98 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { ToastProvider } from "@/hooks/use-toast";
 import AppLayout from "@/components/layout/AppLayout";
+import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import KanbanBoard from "@/pages/KanbanBoard";
 import Calendar from "@/pages/Calendar";
 import TeamPage from "@/pages/TeamPage";
-import NotFound from "./pages/NotFound";
-import Index from "@/pages/Index";
+import Settings from "@/pages/Settings";
+import NotFound from "@/pages/NotFound";
+import { useProject } from "@/contexts/ProjectContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ProjectProvider>
-      <ToastProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/kanban" element={<KanbanBoard />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/team" element={<TeamPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppLayout>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ToastProvider>
-    </ProjectProvider>
-  </QueryClientProvider>
-);
+// Protected route wrapper component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, isLoading } = useProject();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <AppLayout>{children}</AppLayout>;
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ProjectProvider>
+        <ToastProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/kanban"
+                element={
+                  <ProtectedRoute>
+                    <KanbanBoard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <Calendar />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <ProtectedRoute>
+                    <TeamPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* 404 route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </ProjectProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

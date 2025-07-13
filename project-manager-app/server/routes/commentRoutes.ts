@@ -1,5 +1,5 @@
 
-import express from 'express';
+import * as express from 'express';
 import Comment from '../models/Comment';
 import Task from '../models/Task';
 import mongoose from 'mongoose';

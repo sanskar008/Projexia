@@ -1,30 +1,38 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useProject } from "@/contexts/ProjectContext";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Grid, 
-  LayoutDashboard, 
-  Calendar, 
-  Users, 
-  Settings, 
-  PlusCircle, 
+import {
+  Grid,
+  LayoutDashboard,
+  Calendar,
+  Users,
+  Settings,
+  PlusCircle,
   LogOut,
   Menu,
-  X
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, projects, currentProject } = useProject();
+  const { currentUser, projects, currentProject, createProject, isLoading, logout } = useProject();
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = React.useState(false);
+  const [showNewProjectDialog, setShowNewProjectDialog] = React.useState(false);
+  const [newProjectName, setNewProjectName] = React.useState("");
+  const [newProjectDescription, setNewProjectDescription] = React.useState("");
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Kanban Board", href: "/kanban", icon: Grid },
     { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "Team", href: "/team", icon: Users },
@@ -40,10 +48,54 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const handleLogout = () => {
+    logout();
+    navigate("/");
     toast({
       title: "Logged out",
-      description: "You have been logged out successfully."
+      description: "You have been logged out successfully.",
     });
+  };
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) {
+      toast({
+        title: "Project name required",
+        description: "Please provide a name for the project",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createProject({
+        name: newProjectName.trim(),
+        description: newProjectDescription.trim(),
+        members: currentUser ? [{
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: "admin",
+          avatarUrl: currentUser.avatarUrl,
+        }] : [],
+        tasks: [], // Initialize with empty tasks array
+      });
+
+      setNewProjectName("");
+      setNewProjectDescription("");
+      setShowNewProjectDialog(false);
+
+      toast({
+        title: "Project created",
+        description: "Your project has been created successfully",
+      });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -58,7 +110,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4">
           {!collapsed && (
-            <div className="text-xl font-bold text-primary">TaskForge</div>
+            <Link to="/" className="text-xl font-bold text-primary">
+              Projexia
+            </Link>
           )}
           <Button
             variant="ghost"
@@ -85,7 +139,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                   : "hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "mr-2")} />
+              <item.icon
+                className={cn("h-5 w-5", collapsed ? "mx-auto" : "mr-2")}
+              />
               {!collapsed && <span>{item.name}</span>}
             </Link>
           ))}
@@ -97,15 +153,54 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex-shrink-0">
           <div className="p-4 flex items-center justify-between">
             {!collapsed && <h3 className="text-sm font-medium">Projects</h3>}
-            <Button variant="ghost" size="icon" className={collapsed ? "mx-auto" : ""}>
-              <PlusCircle className="h-5 w-5" />
-            </Button>
+            <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={collapsed ? "mx-auto" : ""}
+                  disabled={isLoading}
+                >
+                  <PlusCircle className="h-5 w-5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Project</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Project Name</Label>
+                    <Input
+                      id="name"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="Enter project name"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newProjectDescription}
+                      onChange={(e) => setNewProjectDescription(e.target.value)}
+                      placeholder="Enter project description"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleCreateProject} disabled={isLoading}>
+                    Create Project
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="px-2 space-y-1 max-h-48 overflow-y-auto">
             {projects.map((project) => (
               <Link
                 key={project.id}
-                to={`/projects/${project.id}`}
+                to={`/kanban?project=${project.id}`}
                 className={cn(
                   "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
                   currentProject?.id === project.id
@@ -114,9 +209,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 )}
               >
                 <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                {!collapsed && (
-                  <span className="truncate">{project.name}</span>
-                )}
+                {!collapsed && <span className="truncate">{project.name}</span>}
               </Link>
             ))}
           </div>
@@ -125,31 +218,31 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <Separator />
 
         {/* User Menu */}
-        <div className="p-4 flex items-center">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-            <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
-          </Avatar>
-          {!collapsed && (
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-medium">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {currentUser.email}
-              </p>
-            </div>
-          )}
-          {!collapsed && (
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
+        {currentUser && (
+          <div className="p-4 flex items-center">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+              <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {currentUser.email}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </div>
+      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
     </div>
   );
 };
