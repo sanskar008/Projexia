@@ -3,6 +3,7 @@ import * as express from 'express';
 import Project from '../models/Project';
 import Task from '../models/Task';
 import ProjectMember from '../models/ProjectMember';
+import ChatMessage from '../models/ChatMessage';
 
 const router = express.Router();
 
@@ -216,6 +217,53 @@ router.delete('/:projectId/members/:memberId', async (req, res) => {
     await ProjectMember.findByIdAndDelete(memberId);
 
     res.json({ message: 'Member removed from project' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Update a project member's role
+router.put('/:projectId/members/:memberId', async (req, res) => {
+  try {
+    const { projectId, memberId } = req.params;
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required' });
+    }
+    const member = await ProjectMember.findById(memberId);
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
+    member.role = role;
+    await member.save();
+    res.json(member);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Get all chat messages for a project
+router.get('/:id/chat', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const messages = await ChatMessage.find({ projectId }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Post a new chat message to a project
+router.post('/:id/chat', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { userId, userName, content } = req.body;
+    if (!userId || !userName || !content) {
+      return res.status(400).json({ message: 'userId, userName, and content are required' });
+    }
+    const message = new ChatMessage({ projectId, userId, userName, content });
+    await message.save();
+    res.status(201).json(message);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

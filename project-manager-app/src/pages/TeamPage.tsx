@@ -152,8 +152,8 @@ const TeamPage = () => {
               className="flex flex-col gap-3"
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!addName.trim() || !addEmail.trim()) {
-                  toast({ title: "Missing fields", description: "Please provide both name and email.", variant: "destructive" });
+                if (!addEmail.trim()) {
+                  toast({ title: "Missing fields", description: "Please provide an email.", variant: "destructive" });
                   return;
                 }
                 if (!currentProject) {
@@ -162,15 +162,9 @@ const TeamPage = () => {
                 }
                 setIsAdding(true);
                 try {
-                  const newMember = await api.inviteProjectMember(currentProject.id, {
-                    name: addName.trim(),
-                    email: addEmail.trim(),
-                    role: addRole,
-                  });
+                  await api.inviteProjectMember(currentProject.id, { email: addEmail.trim() });
                   await updateProject(currentProject.id, {});
-                  setAddName("");
                   setAddEmail("");
-                  setAddRole("member");
                   setDialogOpen(false);
                   toast({ title: "Member added", description: "The member was added to the project." });
                   navigate("/team");
@@ -182,15 +176,6 @@ const TeamPage = () => {
               }}
             >
               <input
-                type="text"
-                placeholder="Name"
-                value={addName}
-                onChange={e => setAddName(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-                disabled={isAdding}
-                required
-              />
-              <input
                 type="email"
                 placeholder="Email"
                 value={addEmail}
@@ -199,16 +184,6 @@ const TeamPage = () => {
                 disabled={isAdding}
                 required
               />
-              <select
-                value={addRole}
-                onChange={e => setAddRole(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-                disabled={isAdding}
-              >
-                <option value="admin">Admin</option>
-                <option value="member">Member</option>
-                <option value="viewer">Viewer</option>
-              </select>
               <Button type="submit" disabled={isAdding} size="sm">
                 Add Member
               </Button>
@@ -313,11 +288,6 @@ const TeamPage = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Message
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>View Profile</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuLabel>Change Role</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleChangeRole(member.id, "admin")}>Admin</DropdownMenuItem>
@@ -375,9 +345,7 @@ const TeamPage = () => {
                           {getMemberRole(project.id, member.id)}
                         </Badge>
                       ) : (
-                        <Button variant="outline" size="sm">
-                          <Plus className="h-3 w-3 mr-1" /> Assign
-                        </Button>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </TableCell>
                   ))}

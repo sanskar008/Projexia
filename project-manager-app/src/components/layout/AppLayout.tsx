@@ -130,9 +130,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       {/* Sidebar */}
       <div
         className={cn(
-          "bg-card border-r border-border transition-all duration-300 ease-in-out flex flex-col",
+          "bg-card border-r border-border transition-all duration-300 ease-in-out flex flex-col h-screen sticky top-0 left-0 z-30",
           collapsed ? "w-16" : "w-64"
         )}
+        style={{ position: 'sticky', top: 0, height: '100vh' }}
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4">
@@ -282,7 +283,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-auto">
+        {children}
+      </div>
     </div>
   );
 };
