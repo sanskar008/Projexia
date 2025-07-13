@@ -30,6 +30,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [showNewProjectDialog, setShowNewProjectDialog] = React.useState(false);
   const [newProjectName, setNewProjectName] = React.useState("");
   const [newProjectDescription, setNewProjectDescription] = React.useState("");
+  const [newProjectColor, setNewProjectColor] = React.useState("#6366f1");
+  const colorOptions = [
+    "#6366f1", // indigo
+    "#f59e42", // orange
+    "#10b981", // green
+    "#ef4444", // red
+    "#fbbf24", // yellow
+    "#3b82f6", // blue
+    "#a855f7", // purple
+  ];
   const [showAdminDeleteDialog, setShowAdminDeleteDialog] = React.useState(false);
 
   const navigation = [
@@ -66,11 +76,19 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       });
       return;
     }
-
+    if (!newProjectDescription.trim()) {
+      toast({
+        title: "Project description required",
+        description: "Please provide a description for the project",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await createProject({
         name: newProjectName.trim(),
         description: newProjectDescription.trim(),
+        color: newProjectColor,
         members: currentUser ? [{
           id: currentUser.id,
           name: currentUser.name,
@@ -78,13 +96,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           role: "admin",
           avatarUrl: currentUser.avatarUrl,
         }] : [],
-        tasks: [], // Initialize with empty tasks array
+        tasks: [],
       });
-
       setNewProjectName("");
       setNewProjectDescription("");
+      setNewProjectColor("#6366f1");
       setShowNewProjectDialog(false);
-
       toast({
         title: "Project created",
         description: "Your project has been created successfully",
@@ -215,6 +232,20 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                       placeholder="Enter project description"
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label>Project Color</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {colorOptions.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`w-7 h-7 rounded-full border-2 transition-colors ${newProjectColor === color ? 'border-primary' : 'border-transparent'} focus:outline-none`}
+                          style={{ background: color }}
+                          onClick={() => setNewProjectColor(color)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex justify-end">
                   <Button onClick={handleCreateProject} disabled={isLoading}>
@@ -237,7 +268,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                   )}
                   onClick={() => setCurrentProject(project)}
                 >
-                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ background: project.color }}></div>
                   {!collapsed && <span className="truncate">{project.name}</span>}
                 </Link>
                 {!collapsed && (

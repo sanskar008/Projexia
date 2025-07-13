@@ -30,6 +30,7 @@ export const fetchProjects = async (userId?: string, email?: string): Promise<Pr
     return projects.map((p: any) => ({
       ...p,
       id: p._id,
+      color: p.color,
       members: p.members?.map((m: any) => ({ ...m, id: m._id })) || [],
       tasks: p.tasks?.map((t: any) => ({ ...t, id: t._id })) || [],
     }));
@@ -60,7 +61,7 @@ export const createProject = async (project: Omit<Project, "id" | "createdAt" | 
       body: JSON.stringify({ ...project, creatorId }),
     });
     const p = await handleResponse(response);
-    return { ...p, id: p._id };
+    return { ...p, id: p._id, color: p.color };
   } catch (error) {
     console.error("Error creating project:", error);
     throw error;

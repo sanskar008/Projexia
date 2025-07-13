@@ -15,17 +15,51 @@ import { useState } from "react";
 const Dashboard = () => {
   const { projects, currentUser, setCurrentProject, createProject } = useProject();
   const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [newProjectColor, setNewProjectColor] = useState("#6366f1"); // default color
+  const colorOptions = [
+    "#6366f1", // indigo
+    "#f59e42", // orange
+    "#10b981", // green
+    "#ef4444", // red
+    "#fbbf24", // yellow
+    "#3b82f6", // blue
+    "#a855f7", // purple
+  ];
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get all tasks from all projects
   const allTasks = projects.flatMap((project) => project.tasks);
   
-  // Get tasks assigned to current user
-  const userTasks = allTasks.filter(
-    (task) => task.assigneeId === currentUser.id
-  );
+  // Get tasks assigned to current user (by email, not id)
+  const userTasks = allTasks.filter((task) => {
+    // Find the project this task belongs to
+    const project = projects.find(p => p.tasks.some(t => t.id === task.id));
+    if (!project) return false;
+    // Find the member assigned to this task
+    const member = project.members.find(m => m.id === task.assigneeId);
+    return member?.email === currentUser.email;
+  });
   
+  // Helper to compare only the date part (ignoring time)
+  const isOverdue = (dueDateStr: string) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const due = new Date(dueDateStr);
+    due.setHours(0,0,0,0);
+    return due < today;
+  };
+  const isUpcoming = (dueDateStr: string) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const due = new Date(dueDateStr);
+    due.setHours(0,0,0,0);
+    const in7Days = new Date(today);
+    in7Days.setDate(today.getDate() + 7);
+    return due >= today && due <= in7Days;
+  };
+
   // Calculate various metrics
   const totalTasks = allTasks.length;
   const completedTasks = allTasks.filter(
@@ -34,13 +68,13 @@ const Dashboard = () => {
   
   const upcomingTasks = userTasks.filter(
     (task) => 
-      new Date(task.dueDate) > new Date() && 
+      isUpcoming(task.dueDate) && 
       task.status !== "completed"
   );
   
   const overdueTasks = userTasks.filter(
     (task) => 
-      new Date(task.dueDate) < new Date() && 
+      isOverdue(task.dueDate) && 
       task.status !== "completed"
   );
 
@@ -105,11 +139,17 @@ const Dashboard = () => {
       toast({ title: "Error", description: "Project name is required." });
       return;
     }
+    if (!newProjectDescription.trim()) {
+      toast({ title: "Error", description: "Project description is required." });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const newProject = await createProject({ name: newProjectName, description: "", members: [], tasks: [] });
+      const newProject = await createProject({ name: newProjectName, description: newProjectDescription, color: newProjectColor, members: [], tasks: [] });
       toast({ title: "Project Created", description: `Project '${newProject.name}' was created successfully.` });
       setNewProjectName("");
+      setNewProjectDescription("");
+      setNewProjectColor("#6366f1");
       setIsNewProjectDialogOpen(false);
     } catch (err) {
       console.error("Error (MongoDB Atlas) creating new project:", err);
@@ -163,6 +203,20 @@ const Dashboard = () => {
               <div className="grid gap-4 py-4">
                 <Label htmlFor="newProjectName">Project Name</Label>
                 <Input id="newProjectName" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
+                <Label htmlFor="newProjectDescription">Description</Label>
+                <Input id="newProjectDescription" value={newProjectDescription} onChange={(e) => setNewProjectDescription(e.target.value)} placeholder="Enter project description" />
+                <Label>Project Color</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`w-7 h-7 rounded-full border-2 transition-colors ${newProjectColor === color ? 'border-primary' : 'border-transparent'} focus:outline-none`}
+                      style={{ background: color }}
+                      onClick={() => setNewProjectColor(color)}
+                    />
+                  ))}
+                </div>
               </div>
               <DialogFooter>
                 <DialogClose asChild>

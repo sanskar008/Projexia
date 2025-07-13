@@ -66,15 +66,19 @@ router.get('/:id', async (req, res) => {
 // Create a new project
 router.post('/', async (req, res) => {
   try {
-    const { name, description, members } = req.body;
+    const { name, description, color, members } = req.body;
     const creatorId = req.query.userId || req.body.creatorId;
     if (!creatorId) {
       return res.status(400).json({ message: 'creatorId is required' });
+    }
+    if (!name || !description || !color) {
+      return res.status(400).json({ message: 'name, description, and color are required' });
     }
     
     const newProject = new Project({
       name,
       description,
+      color,
       tasks: [],
       members: [],
       creatorId

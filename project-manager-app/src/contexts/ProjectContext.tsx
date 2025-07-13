@@ -35,6 +35,7 @@ export interface Project {
   id: string;
   name: string;
   description: string;
+  color: string;
   tasks: Task[];
   members: ProjectMember[];
   createdAt: string;
@@ -253,9 +254,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       setError(null);
       const newTask = await api.createTask(task);
-      
       setTasks(prev => [...prev, newTask]);
-      
       // Update current project with the new task
       if (currentProject?.id === task.projectId) {
         setCurrentProject(prev => {
@@ -266,7 +265,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           };
         });
       }
-      
+      // Refresh all projects so Dashboard stays up to date
+      await loadProjects();
       return newTask;
     } catch (err) {
       console.error("Error creating task:", err);
@@ -279,9 +279,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       setError(null);
       const updatedTask = await api.updateTask(id, task);
-      
       setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
-      
       // Update current project with the updated task
       if (currentProject) {
         setCurrentProject(prev => {
@@ -292,7 +290,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           };
         });
       }
-      
+      // Refresh all projects so Dashboard stays up to date
+      await loadProjects();
       return updatedTask;
     } catch (err) {
       console.error("Error updating task:", err);
@@ -305,9 +304,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       setError(null);
       await api.deleteTask(id);
-      
       setTasks(prev => prev.filter(t => t.id !== id));
-      
       // Update current project by removing the deleted task
       if (currentProject) {
         setCurrentProject(prev => {
@@ -318,6 +315,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
           };
         });
       }
+      // Refresh all projects so Dashboard stays up to date
+      await loadProjects();
     } catch (err) {
       console.error("Error deleting task:", err);
       setError("Failed to delete task. Please try again.");
