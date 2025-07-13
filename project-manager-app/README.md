@@ -1,62 +1,69 @@
+# Projexia
 
-# Project Management Application
+Projexia is a project management application designed to help users manage their projects effectively. It provides features for task tracking, team collaboration, and progress monitoring, making it an essential tool for teams of all sizes.
 
-This is a full-stack project management application with React frontend and MongoDB backend.
+## Features
 
-## Frontend
+- **Task Tracking**: Create, assign, and track tasks within your projects.
+- **Team Collaboration**: Collaborate with team members in real-time.
+- **Dashboard**: Get an overview of ongoing projects and their statuses.
+- **Progress Monitoring**: Monitor the progress of tasks and projects easily.
 
-The frontend is built with React, Tailwind CSS, and shadcn/ui components.
+## Technology Stack
 
-### Features
-- Dashboard with project statistics
-- Kanban board for task management
-- Team management
-- Calendar view for deadlines
+- **TypeScript**: The primary programming language used for the application.
+- **JavaScript**: Utilized in various parts of the application.
+- **Other Technologies**: Additional technologies may be included as the project evolves.
 
-## Backend
+## Installation
 
-The backend is built with Express.js and MongoDB.
+To get started with Projexia, follow these steps:
 
-### Setup
+1. Clone the repository:
 
-1. Make sure you have MongoDB installed and running locally.
-   - You can download MongoDB from [here](https://www.mongodb.com/try/download/community).
-   - Alternatively, you can use MongoDB Atlas (cloud version) and update the connection string in `.env`.
-
-2. Install server dependencies:
+   ```bash
+   git clone https://github.com/sanskar008/Projexia.git
    ```
-   cd server
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd Projexia
+   ```
+
+3. Install the dependencies:
+
+   ```bash
    npm install
    ```
 
-3. Start the server:
-   ```
-   npm run dev
-   ```
-
-## Running the Full Application
-
-1. Start MongoDB:
-   ```
-   mongod
+4. Start the application:
+   ```bash
+   npm start
    ```
 
-2. Start the backend server (in one terminal):
-   ```
-   cd server
-   npm run dev
-   ```
+## Usage
 
-3. Start the frontend (in another terminal):
-   ```
-   npm run dev
-   ```
+Once the application is running, you can create projects, add tasks, and invite team members to collaborate. Explore the dashboard to see an overview of your projects and their current status.
 
-## Environment Variables
+## Contributing
 
-You can configure the application by creating a `.env` file in the root directory with the following variables:
+Contributions are welcome! If you'd like to contribute to Projexia, please follow these steps:
 
-```
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/project-manager
-```
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Make your changes and commit them (`git commit -m 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Open a pull request.
+
+## License
+
+This project does not have a specified license. Please check the repository for updates.
+
+## Acknowledgments
+
+- Thanks to all contributors and the open-source community for their support.
+
+## Contact
+
+For any inquiries or support, please reach out to the repository owner at [sanskar008](https://github.com/sanskar008).
