@@ -31,15 +31,16 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
   const { currentProject, updateProject } = useProject();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState("member");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    if (!email.trim() || !name.trim()) {
       toast({
-        title: "Email required",
-        description: "Please provide an email address",
+        title: "Missing fields",
+        description: "Please provide both name and email address",
         variant: "destructive",
       });
       return;
@@ -49,6 +50,7 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
       setIsSubmitting(true);
       const newMember = await api.inviteProjectMember(projectId, {
         email: email.trim(),
+        name: name.trim(),
         role,
       });
 
@@ -60,6 +62,7 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
       }
 
       setEmail("");
+      setName("");
       setRole("member");
       setOpen(false);
 
@@ -96,6 +99,18 @@ const InviteMemberDialog = ({ projectId }: InviteMemberDialogProps) => {
         </DialogHeader>
         <form onSubmit={handleInvite}>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter member's name"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

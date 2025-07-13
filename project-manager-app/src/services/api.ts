@@ -21,7 +21,13 @@ export const fetchProjects = async (): Promise<Project[]> => {
         'Content-Type': 'application/json'
       },
     });
-    return await handleResponse(response);
+    const projects = await handleResponse(response);
+    return projects.map((p: any) => ({
+      ...p,
+      id: p._id,
+      members: p.members?.map((m: any) => ({ ...m, id: m._id })) || [],
+      tasks: p.tasks?.map((t: any) => ({ ...t, id: t._id })) || [],
+    }));
   } catch (error) {
     console.error("Error fetching projects:", error);
     throw error;
@@ -31,7 +37,8 @@ export const fetchProjects = async (): Promise<Project[]> => {
 export const fetchProjectById = async (id: string): Promise<Project> => {
   try {
     const response = await fetch(`${API_URL}/projects/${id}`);
-    return await handleResponse(response);
+    const p = await handleResponse(response);
+    return { ...p, id: p._id };
   } catch (error) {
     console.error(`Error fetching project ${id}:`, error);
     throw error;
@@ -47,7 +54,8 @@ export const createProject = async (project: Omit<Project, "id" | "createdAt" | 
       },
       body: JSON.stringify(project),
     });
-    return await handleResponse(response);
+    const p = await handleResponse(response);
+    return { ...p, id: p._id };
   } catch (error) {
     console.error("Error creating project:", error);
     throw error;
@@ -93,7 +101,8 @@ export const fetchTasksByProject = async (projectId: string): Promise<Task[]> =>
         'Content-Type': 'application/json'
       },
     });
-    return await handleResponse(response);
+    const tasks = await handleResponse(response);
+    return tasks.map((t: any) => ({ ...t, id: t._id }));
   } catch (error) {
     console.error(`Error fetching tasks for project ${projectId}:`, error);
     throw error;
@@ -109,7 +118,8 @@ export const createTask = async (task: Omit<Task, "id" | "createdAt" | "updatedA
       },
       body: JSON.stringify(task),
     });
-    return await handleResponse(response);
+    const t = await handleResponse(response);
+    return { ...t, id: t._id };
   } catch (error) {
     console.error("Error creating task:", error);
     throw error;
@@ -165,10 +175,10 @@ export const addComment = async (taskId: string, comment: { content: string; use
 // Project Member API
 export const inviteProjectMember = async (
   projectId: string,
-  member: { email: string; role: string }
+  member: { email: string; name: string; role: string }
 ): Promise<ProjectMember> => {
   try {
-    const response = await fetch(`${API_URL}/projects/${projectId}/members`, {
+    const response = await fetch(`${API_URL}/projects/${projectId}/invite`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

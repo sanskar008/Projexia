@@ -151,7 +151,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const loadTasks = async () => {
-    if (!currentProject) return;
+    if (!currentProject || !currentProject.id) return;
     
     try {
       setError(null);

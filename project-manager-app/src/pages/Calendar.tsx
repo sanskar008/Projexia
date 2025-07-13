@@ -9,15 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 const Calendar = () => {
-  const { projects, currentProject } = useProject();
+  const { projects } = useProject();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
-  // Get all tasks from all projects if no project is selected
-  const tasks = currentProject
-    ? currentProject.tasks
-    : projects.flatMap((project) => project.tasks);
+  // Always get all tasks from all projects
+  const tasks = projects.flatMap((project) => project.tasks);
 
   // Group tasks by date
   const tasksByDate: Record<string, Task[]> = {};

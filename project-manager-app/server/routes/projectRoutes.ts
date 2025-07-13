@@ -149,7 +149,6 @@ router.post('/:id/invite', async (req, res) => {
 
     // Create new member
     const newMember = new ProjectMember({
-      id: String(Date.now()),
       name,
       email,
       role,
@@ -163,6 +162,30 @@ router.post('/:id/invite', async (req, res) => {
     await project.save();
 
     res.status(201).json(newMember);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Remove a member from a project
+router.delete('/:projectId/members/:memberId', async (req, res) => {
+  try {
+    const { projectId, memberId } = req.params;
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Remove member from project.members array
+    project.members = project.members.filter(
+      (m: any) => m.toString() !== memberId
+    );
+    await project.save();
+
+    // Remove the ProjectMember document
+    await ProjectMember.findByIdAndDelete(memberId);
+
+    res.json({ message: 'Member removed from project' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

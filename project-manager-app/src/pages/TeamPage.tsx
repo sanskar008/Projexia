@@ -1,6 +1,9 @@
 
 import React from "react";
 import { useProject, ProjectMember } from "@/contexts/ProjectContext";
+import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import * as api from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,9 +33,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const TeamPage = () => {
-  const { projects, currentProject } = useProject();
+  const navigate = useNavigate();
+  const { projects, currentProject, updateProject } = useProject();
+  const [addName, setAddName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addRole, setAddRole] = useState("member");
+  const [isAdding, setIsAdding] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Get members from the current project or all projects
   const members = currentProject 
@@ -99,13 +110,111 @@ const TeamPage = () => {
     return member ? member.role : null;
   };
 
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    if (!currentProject) return;
+    try {
+      await api.updateProjectMemberRole(currentProject.id, memberId, newRole);
+      await updateProject(currentProject.id, {});
+      toast({ title: "Role updated", description: "Member role updated successfully." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update role.", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!currentProject) return;
+    if (!window.confirm("Are you sure you want to remove this member?")) return;
+    try {
+      await api.removeProjectMember(currentProject.id, memberId);
+      await updateProject(currentProject.id, {});
+      toast({ title: "Member removed", description: "The member was removed from the project." });
+      navigate("/team");
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to remove member.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="p-6 h-full overflow-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Team</h1>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" /> Invite Member
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <UserPlus className="mr-2 h-4 w-4" /> Add Member
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Add Team Member</DialogTitle>
+            </DialogHeader>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!addName.trim() || !addEmail.trim()) {
+                  toast({ title: "Missing fields", description: "Please provide both name and email.", variant: "destructive" });
+                  return;
+                }
+                if (!currentProject) {
+                  toast({ title: "No project selected", description: "Select a project to add members.", variant: "destructive" });
+                  return;
+                }
+                setIsAdding(true);
+                try {
+                  const newMember = await api.inviteProjectMember(currentProject.id, {
+                    name: addName.trim(),
+                    email: addEmail.trim(),
+                    role: addRole,
+                  });
+                  await updateProject(currentProject.id, {});
+                  setAddName("");
+                  setAddEmail("");
+                  setAddRole("member");
+                  setDialogOpen(false);
+                  toast({ title: "Member added", description: "The member was added to the project." });
+                  navigate("/team");
+                } catch (error) {
+                  toast({ title: "Error", description: "Failed to add member.", variant: "destructive" });
+                } finally {
+                  setIsAdding(false);
+                }
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Name"
+                value={addName}
+                onChange={e => setAddName(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+                disabled={isAdding}
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={addEmail}
+                onChange={e => setAddEmail(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+                disabled={isAdding}
+                required
+              />
+              <select
+                value={addRole}
+                onChange={e => setAddRole(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+                disabled={isAdding}
+              >
+                <option value="admin">Admin</option>
+                <option value="member">Member</option>
+                <option value="viewer">Viewer</option>
+              </select>
+              <Button type="submit" disabled={isAdding} size="sm">
+                Add Member
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
@@ -210,8 +319,12 @@ const TeamPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem>View Profile</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Change Role</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuLabel>Change Role</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleChangeRole(member.id, "admin")}>Admin</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeRole(member.id, "member")}>Member</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChangeRole(member.id, "viewer")}>Viewer</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleRemoveMember(member.id)}>
                           Remove
                         </DropdownMenuItem>
                       </DropdownMenuContent>

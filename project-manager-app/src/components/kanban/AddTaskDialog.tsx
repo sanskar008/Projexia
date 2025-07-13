@@ -38,7 +38,7 @@ interface AddTaskDialogProps {
 }
 
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
-  const { createTask, currentProject, isLoading } = useProject();
+  const { createTask, currentProject, isLoading, loadTasks } = useProject();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -52,11 +52,20 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!title.trim()) {
       toast({
         title: "Error",
         description: "Task title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!description.trim()) {
+      toast({
+        title: "Error",
+        description: "Task description is required",
         variant: "destructive",
       });
       return;
@@ -97,6 +106,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
         attachments: [], // Add empty attachments array
       });
 
+      // Refresh tasks for the current project
+      if (currentProject) {
+        await loadTasks(currentProject.id);
+      }
+
       // Reset form
       setTitle("");
       setDescription("");
@@ -107,7 +121,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
       setTags([]);
       setNewTag("");
       setOpen(false);
-
+      
       toast({
         title: "Success",
         description: "Task created successfully",
@@ -169,6 +183,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
               placeholder="Enter task description"
               disabled={isSubmitting}
               rows={3}
+              required
             />
           </div>
 
@@ -181,17 +196,17 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
                 disabled={isSubmitting}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="backlog">Backlog</SelectItem>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="review">Review</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="backlog">Backlog</SelectItem>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="review">Review</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
@@ -201,15 +216,15 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
                 disabled={isSubmitting}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
                   <SelectItem value="urgent">Urgent</SelectItem>
                   <SelectItem value="high">High</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
             </div>
           </div>
 
@@ -242,7 +257,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
 
           <div className="space-y-2">
             <Label htmlFor="assignee">Assignee</Label>
-            <Select
+            <Select 
               value={assigneeId}
               onValueChange={setAssigneeId}
               disabled={isSubmitting}
@@ -301,11 +316,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
                     >
                       <X className="h-3 w-3" />
                     </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
+                ))}
+            </div>
+          )}
+        </div>
 
           <div className="flex justify-end gap-2">
             <Button
@@ -325,7 +340,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({ projectId }) => {
               ) : (
                 "Create Task"
               )}
-            </Button>
+          </Button>
           </div>
         </form>
       </DialogContent>

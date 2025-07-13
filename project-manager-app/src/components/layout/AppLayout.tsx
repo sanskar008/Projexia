@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, projects, currentProject, createProject, isLoading, logout } = useProject();
+  const { currentUser, projects, currentProject, createProject, isLoading, logout, setCurrentProject, deleteProject } = useProject();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = React.useState(false);
@@ -95,6 +95,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         description: "Failed to create project. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+    try {
+      await deleteProject(projectId);
+      toast({ title: 'Project deleted', description: 'The project was deleted successfully.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete project.', variant: 'destructive' });
     }
   };
 
@@ -198,19 +208,32 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <div className="px-2 space-y-1 max-h-48 overflow-y-auto">
             {projects.map((project) => (
-              <Link
-                key={project.id}
-                to={`/kanban?project=${project.id}`}
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  currentProject?.id === project.id
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-muted"
+              <div key={project.id} className="flex items-center group">
+                <Link
+                  to={`/kanban?project=${project.id}`}
+                  className={cn(
+                    "flex-1 flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    currentProject?.id === project.id
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-muted"
+                  )}
+                  onClick={() => setCurrentProject(project)}
+                >
+                  <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
+                  {!collapsed && <span className="truncate">{project.name}</span>}
+                </Link>
+                {!collapsed && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDeleteProject(project.id)}
+                    title="Delete Project"
+                  >
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
                 )}
-              >
-                <div className="w-2 h-2 bg-primary rounded-full mr-2"></div>
-                {!collapsed && <span className="truncate">{project.name}</span>}
-              </Link>
+              </div>
             ))}
           </div>
         </div>
