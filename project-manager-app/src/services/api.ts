@@ -254,3 +254,13 @@ export const postProjectChatMessage = async (
   if (!response.ok) throw new Error('Failed to send chat message');
   return response.json();
 };
+
+export const updateUserAvatar = async (userId: string, avatarUrl: string) => {
+  const response = await fetch(`${API_URL}/auth/me/avatar`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, avatarUrl }),
+  });
+  if (!response.ok) throw new Error('Failed to update avatar');
+  return response.json();
+};
