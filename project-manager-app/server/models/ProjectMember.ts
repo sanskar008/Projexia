@@ -1,5 +1,4 @@
-
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface ProjectMemberDocument extends Document {
   name: string;
@@ -12,13 +11,20 @@ export interface ProjectMemberDocument extends Document {
 const ProjectMemberSchema: Schema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { 
-    type: String, 
+  role: {
+    type: String,
     enum: ["admin", "member", "viewer"],
-    default: "member" 
+    default: "member",
   },
   avatarUrl: { type: String },
-  projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true }
+  projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
 });
 
-export default mongoose.model<ProjectMemberDocument>('ProjectMember', ProjectMemberSchema);
+// Indexes for optimization
+ProjectMemberSchema.index({ projectId: 1 });
+ProjectMemberSchema.index({ email: 1 });
+
+export default mongoose.model<ProjectMemberDocument>(
+  "ProjectMember",
+  ProjectMemberSchema
+);

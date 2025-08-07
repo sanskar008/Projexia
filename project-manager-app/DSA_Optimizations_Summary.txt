@@ -1,0 +1,35 @@
+DSA (Data Structures & Algorithms) Optimizations Applied
+=======================================================
+
+1. MongoDB Indexes (Database Data Structures)
+--------------------------------------------
+- Added indexes to frequently queried fields in all major Mongoose models:
+  - Task: projectId, assigneeId, status
+  - Project: creatorId
+  - Comment: taskId, userId
+  - ChatMessage: projectId, userId
+  - ProjectMember: projectId, email
+  - User: email, googleId
+- Purpose: Indexes are special data structures that speed up queries and lookups, reducing time complexity from O(n) to O(log n) or O(1) for indexed fields.
+
+2. In-Memory LRU Cache (Map-based Data Structure)
+-------------------------------------------------
+- Created a simple LRU (Least Recently Used) cache utility using the 'lru-cache' package.
+- Purpose: Store and quickly retrieve frequently accessed data, reducing database hits and improving response times.
+
+3. Rate Limiter (Map for Counting Requests)
+-------------------------------------------
+- Implemented a rate limiter middleware using a JavaScript Map to track request timestamps per IP.
+- Purpose: Prevent abuse by limiting the number of requests per user/IP in a given time window.
+
+4. Membership Checks with Set
+-----------------------------
+- Added a middleware that loads project member IDs into a Set for O(1) membership checks.
+- Purpose: Efficiently check if a user is a member of a project, instead of iterating through arrays (O(n)).
+
+5. Integration
+--------------
+- Integrated the rate limiter globally in the Express app.
+- Used the membership Set middleware in project routes where fast membership checks are needed.
+
+These optimizations improve the scalability and performance of your backend by leveraging efficient data structures and algorithms in critical areas.

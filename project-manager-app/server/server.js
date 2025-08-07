@@ -3,8 +3,13 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const cookieSession = require("cookie-session");
 const dotenv = require("dotenv");
+
 const authRoutes = require("./routes/auth");
 require("./config/passport");
+
+// Optimization middlewares
+const rateLimiter = require("./middleware/rateLimiter");
+app.use(rateLimiter);
 
 dotenv.config();
 

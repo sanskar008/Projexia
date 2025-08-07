@@ -1,5 +1,4 @@
-
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface CommentDocument extends Document {
   content: string;
@@ -11,8 +10,12 @@ export interface CommentDocument extends Document {
 const CommentSchema: Schema = new Schema({
   content: { type: String, required: true },
   userId: { type: String, required: true },
-  taskId: { type: Schema.Types.ObjectId, ref: 'Task', required: true },
-  createdAt: { type: Date, default: Date.now }
+  taskId: { type: Schema.Types.ObjectId, ref: "Task", required: true },
+  createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model<CommentDocument>('Comment', CommentSchema);
+// Indexes for optimization
+CommentSchema.index({ taskId: 1 });
+CommentSchema.index({ userId: 1 });
+
+export default mongoose.model<CommentDocument>("Comment", CommentSchema);
