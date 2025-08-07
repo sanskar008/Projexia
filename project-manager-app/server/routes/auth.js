@@ -1,35 +1,7 @@
-// const router = require("express").Router();
-// const passport = require("passport");
-
-// router.get(
-//   "/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] })
-// );
-
-// router.get(
-//   "/google/callback",
-//   passport.authenticate("google", { failureRedirect: "/" }),
-//   (req, res) => {
-//     res.redirect("http://localhost:8080"); // your frontend URL
-//   }
-// );
-
-// router.get("/logout", (req, res) => {
-//   req.logout(() => {
-//     res.send("Logged out");
-//   });
-// });
-
-// router.get("/current-user", (req, res) => {
-//   res.send(req.user || null);
-// });
-
-// module.exports = router;
-
-//Bypass
-
 const router = require("express").Router();
 const passport = require("passport");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User"); // Adjust the path to your User model
 
 const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
 
@@ -90,6 +62,78 @@ router.get("/current-user", (req, res) => {
     });
   }
   res.send(req.user || null);
+});
+
+// Email-Password Signup Route
+router.post("/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Please provide name, email, and password" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    await newUser.save();
+
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Email-Password Login Route
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Please provide email and password" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // You can create a session here or issue a JWT as per your app's auth strategy
+    // For now, just sending user info back without password
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 module.exports = router;
