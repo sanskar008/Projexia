@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth");
 require("./config/passport");
 
 dotenv.config();
+app.use(express.json());
 
 const app = express();
 const PORT = process.env.PORT || 8080;
