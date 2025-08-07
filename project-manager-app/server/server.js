@@ -7,7 +7,6 @@ const authRoutes = require("./routes/auth");
 require("./config/passport");
 
 dotenv.config();
-app.use(express.json());
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -15,7 +14,7 @@ const PORT = process.env.PORT || 8080;
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"));
-
+app.use(express.json());
 app.use(
   cookieSession({
     name: "session",
