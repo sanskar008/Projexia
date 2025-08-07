@@ -34,14 +34,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-const allowedOrigin = "https://projexia-flax.vercel.app";
+const allowedOrigins = ["https://projexia-flax.vercel.app", "http://localhost:5173", "https://projexia.sanskarkoserwal.online", "https://projexia.sanskarkoserwal.online"];
 app.use(express.json());
 
 app.use(
   cors({
     origin: function (origin, callback) {
       console.log("CORS origin:", origin);
-      if (origin === allowedOrigin || !origin) {
+      if (allowedOrigins.includes(origin) || !origin) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));

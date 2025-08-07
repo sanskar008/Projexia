@@ -30,7 +30,12 @@ app.use(passport.session());
 const cors = require("cors");
 app.use(
   cors({
-    origin: "https://projexia-flax.vercel.app", // your frontend
+    origin: [
+      "https://projexia-flax.vercel.app",
+      "http://localhost:5173",
+      "https://projexia.sanskarkoserwal.online",
+      "https://projexia.sanskarkoserwal.online",
+    ], // your frontend
     methods: "GET,POST",
     credentials: true,
   })
