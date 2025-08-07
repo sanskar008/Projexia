@@ -12,16 +12,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const cors = require("cors");
-
 const allowedOrigin = "https://projexia-flax.vercel.app";
 
 app.use(
   cors({
-    origin: allowedOrigin,
-    credentials: true, // if you use cookies or auth headers
+    origin: function (origin, callback) {
+      console.log("CORS origin:", origin);
+      if (origin === allowedOrigin || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
+
+app.use(express.json()); // to parse JSON body
 
 app.use(
   session({
