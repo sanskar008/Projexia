@@ -1,139 +1,138 @@
 const router = require("express").Router();
-const passport = require("passport");
 const bcrypt = require("bcryptjs");
-const User = require("../models/User"); // Adjust the path to your User model
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
-
-// Google Auth Route
-router.get(
-  "/google",
-  (req, res, next) => {
-    if (BYPASS_AUTH) {
-      // Directly redirect to callback bypassing Google
-      return res.redirect("/auth/google/callback?bypass=true");
-    }
-    next();
-  },
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-// Google Callback
-router.get(
-  "/google/callback",
-  (req, res, next) => {
-    if (req.query.bypass && BYPASS_AUTH) {
-      // Create mock user session
-      req.login(
-        {
-          displayName: "Test User",
-          emails: [{ value: "test@example.com" }],
-          id: "1234567890",
-        },
-        (err) => {
-          if (err) return next(err);
-          return res.redirect("http://localhost:8080");
-        }
-      );
-    } else {
-      next();
-    }
-  },
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect("http://localhost:8080"); // your frontend URL
-  }
-);
-
-// Logout Route
-router.get("/logout", (req, res) => {
-  req.logout(() => {
-    res.send("Logged out");
-  });
-});
-
-// Get Current User
-router.get("/current-user", (req, res) => {
-  if (BYPASS_AUTH && !req.user) {
-    return res.send({
-      displayName: "Test User",
-      emails: [{ value: "test@example.com" }],
-      id: "1234567890",
-    });
-  }
-  res.send(req.user || null);
-});
-
-// Email-Password Signup Route
-router.post("/signup", async (req, res) => {
+// Register/Signup a new user
+const handleRegister = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
+    
+    // Validate input
     if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide name, email, and password" });
+      return res.status(400).json({ message: "Please provide all required fields" });
+    }
+    
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: "User already exists with this email" });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
+    // Create new user
+    user = new User({
       name,
       email,
-      password: hashedPassword,
+      password: await bcrypt.hash(password, 10)
     });
 
-    await newUser.save();
+    await user.save();
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'dev_jwt_secret',
+      { expiresIn: '7d' }
+    );
 
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(201).json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email 
+      } 
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Server error during registration" });
   }
-});
+};
 
-// Email-Password Login Route
+// Register a new user
+router.post("/register", handleRegister);
+
+// Signup endpoint (same as register)
+router.post("/signup", handleRegister);
+
+// Login user
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    
+    // Validate input
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide email and password" });
+      return res.status(400).json({ message: "Please provide email and password" });
     }
-
-    const user = await User.findOne({ email });
+    
+    // Check if user exists
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Validate password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // You can create a session here or issue a JWT as per your app's auth strategy
-    // For now, just sending user info back without password
-    res.json({
-      message: "Login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'dev_jwt_secret',
+      { expiresIn: '7d' }
+    );
+
+    // Return user data without password
+    const userData = user.toObject();
+    delete userData.password;
+
+    res.json({ 
+      token, 
+      user: userData 
     });
-  } catch (err) {
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Server error during login" });
+  }
+});
+
+// Logout Route
+router.post("/logout", (req, res) => {
+  // Since we're using JWT, the client should remove the token
+  res.json({ message: "Logged out successfully" });
+});
+
+// Get current user
+router.get("/me", (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret');
+    User.findById(decoded.userId)
+      .select('-password')
+      .then(user => {
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user);
+      })
+      .catch(err => {
+        console.error("Error finding user:", err);
+        res.status(500).json({ message: "Server error" });
+      });
+  } catch (error) {
+    console.error("Token verification error:", error);
+    res.status(401).json({ message: "Invalid or expired token" });
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// This route is intentionally left as a placeholder for future authentication endpoints
 
 module.exports = router;

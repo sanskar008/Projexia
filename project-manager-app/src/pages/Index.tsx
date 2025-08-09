@@ -12,13 +12,12 @@ const Index = () => {
   const { currentUser, isLoading, login, signup } = useProject();
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
- 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  // toast is imported directly, no need to destructure from useToast
 
   // If user is already logged in, redirect to dashboard
   if (currentUser) {
@@ -44,7 +43,10 @@ const Index = () => {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check your credentials and try again.",
         variant: "destructive",
       });
     } finally {
@@ -71,7 +73,8 @@ const Index = () => {
       console.error("Signup error:", error);
       toast({
         title: "Signup failed",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -97,7 +100,10 @@ const Index = () => {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "login" | "signup")}
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -129,11 +135,7 @@ const Index = () => {
                   disabled={isSubmitting}
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in..." : "Sign in"}
               </Button>
             </form>
@@ -177,11 +179,7 @@ const Index = () => {
                   disabled={isSubmitting}
                 />
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Creating account..." : "Create account"}
               </Button>
             </form>
@@ -189,9 +187,7 @@ const Index = () => {
         </Tabs>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>
-            Demo account: demo@example.com / demo123
-          </p>
+          <p>Demo account: demo@example.com / demo123</p>
         </div>
       </div>
     </div>
